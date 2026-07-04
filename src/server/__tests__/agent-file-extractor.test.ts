@@ -22,7 +22,7 @@ describe('writeExtractedFiles', () => {
     mockMkdirSync.mockReturnValue(undefined)
     mockWriteFileSync.mockReturnValue(undefined)
     mockExistsSync.mockReturnValue(false)
-    mockReaddirSync.mockReturnValue([] as unknown as fs.Dirent[])
+    mockReaddirSync.mockReturnValue([] as any)
     const mod = await import('../agent-file-extractor')
     writeExtractedFiles = mod.writeExtractedFiles
     extractFileTags = mod.extractFileTags
@@ -75,7 +75,7 @@ describe('writeExtractedFiles', () => {
   })
 
   it('appends counter when mission slug collides', () => {
-    mockReaddirSync.mockReturnValue(['new-mission'] as unknown as fs.Dirent[])
+    mockReaddirSync.mockReturnValue(['new-mission'] as any)
 
     writeExtractedFiles(
       [{ path: 'test.ts', content: 'x' }],
@@ -89,7 +89,7 @@ describe('writeExtractedFiles', () => {
   })
 
   it('increments counter until mission slug is unique', () => {
-    mockReaddirSync.mockReturnValue(['new-mission', 'new-mission-2', 'new-mission-3'] as unknown as fs.Dirent[])
+    mockReaddirSync.mockReturnValue(['new-mission', 'new-mission-2', 'new-mission-3'] as any)
 
     writeExtractedFiles(
       [{ path: 'test.ts', content: 'x' }],
@@ -103,7 +103,7 @@ describe('writeExtractedFiles', () => {
   })
 
   it('does not append counter when mission slug is unique', () => {
-    mockReaddirSync.mockReturnValue(['other-mission'] as unknown as fs.Dirent[])
+    mockReaddirSync.mockReturnValue(['other-mission'] as any)
 
     writeExtractedFiles(
       [{ path: 'test.ts', content: 'x' }],
