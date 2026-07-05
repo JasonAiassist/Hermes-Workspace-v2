@@ -163,6 +163,9 @@ import { Route as ApiClaudeTasksTaskIdRouteImport } from './routes/api/claude-ta
 import { Route as ApiClaudeProxySplatRouteImport } from './routes/api/claude-proxy/$'
 import { Route as ApiClaudeJobsJobIdRouteImport } from './routes/api/claude-jobs.$jobId'
 import { Route as ApiArtifactsArtifactIdRouteImport } from './routes/api/artifacts.$artifactId'
+import { Route as ApiAgentsMessagesRouteImport } from './routes/api/agents/messages'
+import { Route as ApiAgentsMessageRouteImport } from './routes/api/agents/message'
+import { Route as ApiAgentsConversationRouteImport } from './routes/api/agents/conversation'
 import { Route as ApiSessionsSessionKeyStatusRouteImport } from './routes/api/sessions/$sessionKey.status'
 import { Route as ApiSessionsSessionKeyActiveRunRouteImport } from './routes/api/sessions/$sessionKey.active-run'
 import { Route as ApiMcpHubSourcesIdRouteImport } from './routes/api/mcp/hub-sources.$id'
@@ -944,6 +947,21 @@ const ApiArtifactsArtifactIdRoute = ApiArtifactsArtifactIdRouteImport.update({
   path: '/$artifactId',
   getParentRoute: () => ApiArtifactsRoute,
 } as any)
+const ApiAgentsMessagesRoute = ApiAgentsMessagesRouteImport.update({
+  id: '/api/agents/messages',
+  path: '/api/agents/messages',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAgentsMessageRoute = ApiAgentsMessageRouteImport.update({
+  id: '/api/agents/message',
+  path: '/api/agents/message',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAgentsConversationRoute = ApiAgentsConversationRouteImport.update({
+  id: '/api/agents/conversation',
+  path: '/api/agents/conversation',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiSessionsSessionKeyStatusRoute =
   ApiSessionsSessionKeyStatusRouteImport.update({
     id: '/$sessionKey/status',
@@ -1083,6 +1101,9 @@ export interface FileRoutesByFullPath {
   '/settings/providers': typeof SettingsProvidersRoute
   '/chat/': typeof ChatIndexRoute
   '/settings/': typeof SettingsIndexRoute
+  '/api/agents/conversation': typeof ApiAgentsConversationRoute
+  '/api/agents/message': typeof ApiAgentsMessageRoute
+  '/api/agents/messages': typeof ApiAgentsMessagesRoute
   '/api/artifacts/$artifactId': typeof ApiArtifactsArtifactIdRoute
   '/api/claude-jobs/$jobId': typeof ApiClaudeJobsJobIdRoute
   '/api/claude-proxy/$': typeof ApiClaudeProxySplatRoute
@@ -1244,6 +1265,9 @@ export interface FileRoutesByTo {
   '/settings/providers': typeof SettingsProvidersRoute
   '/chat': typeof ChatIndexRoute
   '/settings': typeof SettingsIndexRoute
+  '/api/agents/conversation': typeof ApiAgentsConversationRoute
+  '/api/agents/message': typeof ApiAgentsMessageRoute
+  '/api/agents/messages': typeof ApiAgentsMessagesRoute
   '/api/artifacts/$artifactId': typeof ApiArtifactsArtifactIdRoute
   '/api/claude-jobs/$jobId': typeof ApiClaudeJobsJobIdRoute
   '/api/claude-proxy/$': typeof ApiClaudeProxySplatRoute
@@ -1407,6 +1431,9 @@ export interface FileRoutesById {
   '/settings/providers': typeof SettingsProvidersRoute
   '/chat/': typeof ChatIndexRoute
   '/settings/': typeof SettingsIndexRoute
+  '/api/agents/conversation': typeof ApiAgentsConversationRoute
+  '/api/agents/message': typeof ApiAgentsMessageRoute
+  '/api/agents/messages': typeof ApiAgentsMessagesRoute
   '/api/artifacts/$artifactId': typeof ApiArtifactsArtifactIdRoute
   '/api/claude-jobs/$jobId': typeof ApiClaudeJobsJobIdRoute
   '/api/claude-proxy/$': typeof ApiClaudeProxySplatRoute
@@ -1571,6 +1598,9 @@ export interface FileRouteTypes {
     | '/settings/providers'
     | '/chat/'
     | '/settings/'
+    | '/api/agents/conversation'
+    | '/api/agents/message'
+    | '/api/agents/messages'
     | '/api/artifacts/$artifactId'
     | '/api/claude-jobs/$jobId'
     | '/api/claude-proxy/$'
@@ -1732,6 +1762,9 @@ export interface FileRouteTypes {
     | '/settings/providers'
     | '/chat'
     | '/settings'
+    | '/api/agents/conversation'
+    | '/api/agents/message'
+    | '/api/agents/messages'
     | '/api/artifacts/$artifactId'
     | '/api/claude-jobs/$jobId'
     | '/api/claude-proxy/$'
@@ -1894,6 +1927,9 @@ export interface FileRouteTypes {
     | '/settings/providers'
     | '/chat/'
     | '/settings/'
+    | '/api/agents/conversation'
+    | '/api/agents/message'
+    | '/api/agents/messages'
     | '/api/artifacts/$artifactId'
     | '/api/claude-jobs/$jobId'
     | '/api/claude-proxy/$'
@@ -2054,6 +2090,9 @@ export interface RootRouteChildren {
   ApiWorkspaceRoute: typeof ApiWorkspaceRoute
   ChatSessionKeyRoute: typeof ChatSessionKeyRoute
   ChatIndexRoute: typeof ChatIndexRoute
+  ApiAgentsConversationRoute: typeof ApiAgentsConversationRoute
+  ApiAgentsMessageRoute: typeof ApiAgentsMessageRoute
+  ApiAgentsMessagesRoute: typeof ApiAgentsMessagesRoute
   ApiClaudeProxySplatRoute: typeof ApiClaudeProxySplatRoute
   ApiDashboardOverviewRoute: typeof ApiDashboardOverviewRoute
   ApiExternalMemoryCandidatesRoute: typeof ApiExternalMemoryCandidatesRoute
@@ -3165,6 +3204,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiArtifactsArtifactIdRouteImport
       parentRoute: typeof ApiArtifactsRoute
     }
+    '/api/agents/messages': {
+      id: '/api/agents/messages'
+      path: '/api/agents/messages'
+      fullPath: '/api/agents/messages'
+      preLoaderRoute: typeof ApiAgentsMessagesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/agents/message': {
+      id: '/api/agents/message'
+      path: '/api/agents/message'
+      fullPath: '/api/agents/message'
+      preLoaderRoute: typeof ApiAgentsMessageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/agents/conversation': {
+      id: '/api/agents/conversation'
+      path: '/api/agents/conversation'
+      fullPath: '/api/agents/conversation'
+      preLoaderRoute: typeof ApiAgentsConversationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/sessions/$sessionKey/status': {
       id: '/api/sessions/$sessionKey/status'
       path: '/$sessionKey/status'
@@ -3523,6 +3583,9 @@ const rootRouteChildren: RootRouteChildren = {
   ApiWorkspaceRoute: ApiWorkspaceRoute,
   ChatSessionKeyRoute: ChatSessionKeyRoute,
   ChatIndexRoute: ChatIndexRoute,
+  ApiAgentsConversationRoute: ApiAgentsConversationRoute,
+  ApiAgentsMessageRoute: ApiAgentsMessageRoute,
+  ApiAgentsMessagesRoute: ApiAgentsMessagesRoute,
   ApiClaudeProxySplatRoute: ApiClaudeProxySplatRoute,
   ApiDashboardOverviewRoute: ApiDashboardOverviewRoute,
   ApiExternalMemoryCandidatesRoute: ApiExternalMemoryCandidatesRoute,
