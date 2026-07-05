@@ -27,6 +27,10 @@ export {
   type HermesSession,
 } from './hermes-api-client'
 
+// Re-export gateway-capabilities passthroughs for backward compatibility
+// (callers expect these from the hermes-api facade).
+export { ensureGatewayProbed } from './gateway-capabilities'
+
 export {
   createSession,
   deleteSession,

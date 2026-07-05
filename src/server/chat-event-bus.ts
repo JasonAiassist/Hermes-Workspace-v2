@@ -47,6 +47,19 @@ export function publishChatEvent(
   broadcast(event, data)
 }
 
+/**
+ * Publish a chat event bypassing the active-send-run deduplication
+ * filter. Used by mission orchestration so that /api/chat-events
+ * subscribers (which attach before the run starts) still receive
+ * progress events.
+ */
+export function publishMissionEvent(
+  event: string,
+  data: Record<string, unknown>,
+): void {
+  broadcast(event, data)
+}
+
 export async function ensureBusStarted(): Promise<void> {
   const bus = getBus()
   if (bus.started) return

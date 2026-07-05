@@ -111,6 +111,10 @@ import { Route as ApiChatEventsRouteImport } from './routes/api/chat-events'
 import { Route as ApiAuthCheckRouteImport } from './routes/api/auth-check'
 import { Route as ApiAuthRouteImport } from './routes/api/auth'
 import { Route as ApiArtifactsRouteImport } from './routes/api/artifacts'
+import { Route as ApiAgentSteerRouteImport } from './routes/api/agent-steer'
+import { Route as ApiAgentPauseRouteImport } from './routes/api/agent-pause'
+import { Route as ApiAgentKillRouteImport } from './routes/api/agent-kill'
+import { Route as ApiAgentDispatchRouteImport } from './routes/api/agent-dispatch'
 import { Route as ApiAgentBusRouteImport } from './routes/api/agent-bus'
 import { Route as ApiUpdateWorkspaceRouteImport } from './routes/api/update/workspace'
 import { Route as ApiUpdateStatusRouteImport } from './routes/api/update/status'
@@ -684,6 +688,26 @@ const ApiArtifactsRoute = ApiArtifactsRouteImport.update({
   path: '/api/artifacts',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAgentSteerRoute = ApiAgentSteerRouteImport.update({
+  id: '/api/agent-steer',
+  path: '/api/agent-steer',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAgentPauseRoute = ApiAgentPauseRouteImport.update({
+  id: '/api/agent-pause',
+  path: '/api/agent-pause',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAgentKillRoute = ApiAgentKillRouteImport.update({
+  id: '/api/agent-kill',
+  path: '/api/agent-kill',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAgentDispatchRoute = ApiAgentDispatchRouteImport.update({
+  id: '/api/agent-dispatch',
+  path: '/api/agent-dispatch',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAgentBusRoute = ApiAgentBusRouteImport.update({
   id: '/api/agent-bus',
   path: '/api/agent-bus',
@@ -1023,6 +1047,10 @@ export interface FileRoutesByFullPath {
   '/vt-capital': typeof VtCapitalRoute
   '/world': typeof WorldRoute
   '/api/agent-bus': typeof ApiAgentBusRoute
+  '/api/agent-dispatch': typeof ApiAgentDispatchRoute
+  '/api/agent-kill': typeof ApiAgentKillRoute
+  '/api/agent-pause': typeof ApiAgentPauseRoute
+  '/api/agent-steer': typeof ApiAgentSteerRoute
   '/api/artifacts': typeof ApiArtifactsRouteWithChildren
   '/api/auth': typeof ApiAuthRoute
   '/api/auth-check': typeof ApiAuthCheckRoute
@@ -1187,6 +1215,10 @@ export interface FileRoutesByTo {
   '/vt-capital': typeof VtCapitalRoute
   '/world': typeof WorldRoute
   '/api/agent-bus': typeof ApiAgentBusRoute
+  '/api/agent-dispatch': typeof ApiAgentDispatchRoute
+  '/api/agent-kill': typeof ApiAgentKillRoute
+  '/api/agent-pause': typeof ApiAgentPauseRoute
+  '/api/agent-steer': typeof ApiAgentSteerRoute
   '/api/artifacts': typeof ApiArtifactsRouteWithChildren
   '/api/auth': typeof ApiAuthRoute
   '/api/auth-check': typeof ApiAuthCheckRoute
@@ -1353,6 +1385,10 @@ export interface FileRoutesById {
   '/vt-capital': typeof VtCapitalRoute
   '/world': typeof WorldRoute
   '/api/agent-bus': typeof ApiAgentBusRoute
+  '/api/agent-dispatch': typeof ApiAgentDispatchRoute
+  '/api/agent-kill': typeof ApiAgentKillRoute
+  '/api/agent-pause': typeof ApiAgentPauseRoute
+  '/api/agent-steer': typeof ApiAgentSteerRoute
   '/api/artifacts': typeof ApiArtifactsRouteWithChildren
   '/api/auth': typeof ApiAuthRoute
   '/api/auth-check': typeof ApiAuthCheckRoute
@@ -1520,6 +1556,10 @@ export interface FileRouteTypes {
     | '/vt-capital'
     | '/world'
     | '/api/agent-bus'
+    | '/api/agent-dispatch'
+    | '/api/agent-kill'
+    | '/api/agent-pause'
+    | '/api/agent-steer'
     | '/api/artifacts'
     | '/api/auth'
     | '/api/auth-check'
@@ -1684,6 +1724,10 @@ export interface FileRouteTypes {
     | '/vt-capital'
     | '/world'
     | '/api/agent-bus'
+    | '/api/agent-dispatch'
+    | '/api/agent-kill'
+    | '/api/agent-pause'
+    | '/api/agent-steer'
     | '/api/artifacts'
     | '/api/auth'
     | '/api/auth-check'
@@ -1849,6 +1893,10 @@ export interface FileRouteTypes {
     | '/vt-capital'
     | '/world'
     | '/api/agent-bus'
+    | '/api/agent-dispatch'
+    | '/api/agent-kill'
+    | '/api/agent-pause'
+    | '/api/agent-steer'
     | '/api/artifacts'
     | '/api/auth'
     | '/api/auth-check'
@@ -2015,6 +2063,10 @@ export interface RootRouteChildren {
   VtCapitalRoute: typeof VtCapitalRoute
   WorldRoute: typeof WorldRoute
   ApiAgentBusRoute: typeof ApiAgentBusRoute
+  ApiAgentDispatchRoute: typeof ApiAgentDispatchRoute
+  ApiAgentKillRoute: typeof ApiAgentKillRoute
+  ApiAgentPauseRoute: typeof ApiAgentPauseRoute
+  ApiAgentSteerRoute: typeof ApiAgentSteerRoute
   ApiArtifactsRoute: typeof ApiArtifactsRouteWithChildren
   ApiAuthRoute: typeof ApiAuthRoute
   ApiAuthCheckRoute: typeof ApiAuthCheckRoute
@@ -2840,6 +2892,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiArtifactsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/agent-steer': {
+      id: '/api/agent-steer'
+      path: '/api/agent-steer'
+      fullPath: '/api/agent-steer'
+      preLoaderRoute: typeof ApiAgentSteerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/agent-pause': {
+      id: '/api/agent-pause'
+      path: '/api/agent-pause'
+      fullPath: '/api/agent-pause'
+      preLoaderRoute: typeof ApiAgentPauseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/agent-kill': {
+      id: '/api/agent-kill'
+      path: '/api/agent-kill'
+      fullPath: '/api/agent-kill'
+      preLoaderRoute: typeof ApiAgentKillRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/agent-dispatch': {
+      id: '/api/agent-dispatch'
+      path: '/api/agent-dispatch'
+      fullPath: '/api/agent-dispatch'
+      preLoaderRoute: typeof ApiAgentDispatchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/agent-bus': {
       id: '/api/agent-bus'
       path: '/api/agent-bus'
@@ -3508,6 +3588,10 @@ const rootRouteChildren: RootRouteChildren = {
   VtCapitalRoute: VtCapitalRoute,
   WorldRoute: WorldRoute,
   ApiAgentBusRoute: ApiAgentBusRoute,
+  ApiAgentDispatchRoute: ApiAgentDispatchRoute,
+  ApiAgentKillRoute: ApiAgentKillRoute,
+  ApiAgentPauseRoute: ApiAgentPauseRoute,
+  ApiAgentSteerRoute: ApiAgentSteerRoute,
   ApiArtifactsRoute: ApiArtifactsRouteWithChildren,
   ApiAuthRoute: ApiAuthRoute,
   ApiAuthCheckRoute: ApiAuthCheckRoute,
