@@ -2,6 +2,9 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { AgentSessionStatusEntry, TeamMember } from '@/screens/gateway/components/team-panel'
 import type { HubTask, TaskStatus } from '@/screens/gateway/components/task-board'
+import { isTaskCategory } from '@/screens/gateway/components/task-board'
+import type { SavedTeamConfig } from '@/screens/gateway/components/hub-constants'
+import type { AgentMetrics } from '@/server/planner/performance-tracker'
 import {
   archiveMissionToHistory,
   loadMissionHistory,
@@ -26,6 +29,15 @@ export type MissionArtifact = {
   timestamp: number
 }
 
+export type MissionFeedEvent = {
+  id: string
+  type: string
+  message: string
+  agentName?: string
+  taskTitle?: string
+  timestamp: number
+}
+
 export type ActiveMission = {
   id: string
   goal: string
@@ -41,6 +53,8 @@ export type ActiveMission = {
   budgetLimit: string
   startedAt: number
   artifacts: MissionArtifact[]
+  agentMetrics: Record<string, AgentMetrics>
+  feedEvents: MissionFeedEvent[]
 }
 
 export type MissionHistory = {
@@ -49,17 +63,18 @@ export type MissionHistory = {
 
 type Updater<T> = T | ((previous: T) => T)
 
-type StartMissionInput = Omit<
+export type StartMissionInput = Omit<
   ActiveMission,
-  'state' | 'agentSessionMap' | 'agentSessionModelMap' | 'agentSessionStatus' | 'artifacts'
+  'state' | 'agentSessionMap' | 'agentSessionModelMap' | 'agentSessionStatus' | 'artifacts' | 'feedEvents'
 > & {
   agentSessionMap?: Record<string, string>
   agentSessionModelMap?: Record<string, string>
   agentSessionStatus?: Record<string, AgentSessionStatusEntry>
   artifacts?: MissionArtifact[]
+  feedEvents?: MissionFeedEvent[]
 }
 
-type MissionStore = {
+export type MissionStore = {
   activeMission: ActiveMission | null
   missionActive: boolean
   missionGoal: string
@@ -73,9 +88,14 @@ type MissionStore = {
   agentSessionModelMap: Record<string, string>
   agentSessionStatus: Record<string, AgentSessionStatusEntry>
   artifacts: MissionArtifact[]
+  agentMetrics: Record<string, AgentMetrics>
+  feedEvents: MissionFeedEvent[]
   restoreCheckpoint: MissionCheckpoint | null
   missionHistory: MissionHistory
   beforeUnloadRegistered: boolean
+  savedTeams: SavedTeamConfig[]
+  streamText: string
+  workerOutputs: Record<string, string>
   startMission: (mission: StartMissionInput) => void
   completeMission: () => void
   abortMission: () => void
@@ -87,9 +107,11 @@ type MissionStore = {
     options?: { sessionKey?: string | null; model?: string | null },
   ) => void
   addArtifact: (artifact: MissionArtifact | MissionArtifact[]) => void
+  addFeedEvent: (event: MissionFeedEvent) => void
   setMissionState: (
     state: Updater<MissionStore['missionState']>,
   ) => void
+  setAgentMetrics: (metrics: Updater<Record<string, AgentMetrics>>) => void
   restoreMission: (checkpoint: MissionCheckpoint) => void
   setMissionGoal: (goal: string) => void
   setRestoreCheckpoint: (checkpoint: MissionCheckpoint | null) => void
@@ -104,24 +126,32 @@ type MissionStore = {
     value: Updater<Record<string, AgentSessionStatusEntry>>,
   ) => void
   setArtifacts: (value: Updater<MissionArtifact[]>) => void
+  setFeedEvents: (value: Updater<MissionFeedEvent[]>) => void
   setActiveMissionMeta: (value: { name?: string; goal?: string }) => void
   saveCheckpoint: () => void
   markBeforeUnloadRegistered: (registered: boolean) => void
+  saveTeam: (config: SavedTeamConfig) => void
+  deleteTeam: (id: string) => void
+  updateSavedTeam: (id: string, updates: Partial<SavedTeamConfig>) => void
+  attachFilesToTasks: (taskIds: string[], files: string[]) => void
+  appendStreamText: (text: string) => void
+  setWorkerOutput: (sessionKey: string, output: string) => void
+  clearStream: () => void
 }
 
 const MAX_HISTORY = 20
 
-function applyUpdater<T>(previous: T, next: Updater<T>): T {
+export function applyUpdater<T>(previous: T, next: Updater<T>): T {
   return typeof next === 'function'
     ? (next as (value: T) => T)(previous)
     : next
 }
 
-function clampHistory(reports: MissionCheckpoint[]): MissionCheckpoint[] {
+export function clampHistory(reports: MissionCheckpoint[]): MissionCheckpoint[] {
   return reports.slice(0, MAX_HISTORY)
 }
 
-function buildCheckpoint(state: MissionStore): MissionCheckpoint | null {
+export function buildCheckpoint(state: MissionStore): MissionCheckpoint | null {
   const mission = state.activeMission
   if (!mission) return null
 
@@ -132,18 +162,18 @@ function buildCheckpoint(state: MissionStore): MissionCheckpoint | null {
     goal: mission.goal,
     processType: mission.processType,
     team: mission.team.map((member) => ({
-      id: member.id,
-      name: member.name,
-      modelId: member.modelId,
-      roleDescription: member.roleDescription,
-      goal: member.goal,
-      backstory: member.backstory,
+      ...member,
     })),
     tasks: mission.tasks.map((task) => ({
       id: task.id,
       title: task.title,
       status: task.status,
       assignedTo: task.agentId,
+      // NEW — Sprint 1 planning fields
+      dependencies: task.dependencies,
+      requiredSkills: task.requiredSkills,
+      estimatedComplexity: task.estimatedComplexity,
+      category: task.category,
     })),
     agentSessionMap: { ...mission.agentSessionMap },
     agentSessions: { ...mission.agentSessionMap },
@@ -159,10 +189,12 @@ function buildCheckpoint(state: MissionStore): MissionCheckpoint | null {
     startedAt: mission.startedAt,
     updatedAt: Date.now(),
     budgetLimit: mission.budgetLimit,
+    agentMetrics: state.agentMetrics,
+    feedEvents: mission.feedEvents,
   }
 }
 
-function syncActiveMission(state: MissionStore): Partial<MissionStore> {
+export function syncActiveMission(state: MissionStore): Partial<MissionStore> {
   if (!state.activeMission) {
     return {
       missionActive: false,
@@ -173,6 +205,7 @@ function syncActiveMission(state: MissionStore): Partial<MissionStore> {
       agentSessionModelMap: {},
       agentSessionStatus: {},
       artifacts: [],
+      agentMetrics: {},
     }
   }
 
@@ -186,10 +219,12 @@ function syncActiveMission(state: MissionStore): Partial<MissionStore> {
     agentSessionModelMap: state.activeMission.agentSessionModelMap,
     agentSessionStatus: state.activeMission.agentSessionStatus,
     artifacts: state.activeMission.artifacts,
+    agentMetrics: state.activeMission.agentMetrics ?? {},
+    feedEvents: state.activeMission.feedEvents ?? [],
   }
 }
 
-function updateCheckpointSnapshot(state: MissionStore): Partial<MissionStore> {
+export function updateCheckpointSnapshot(state: MissionStore): Partial<MissionStore> {
   const checkpoint = buildCheckpoint(state)
   return {
     restoreCheckpoint:
@@ -217,9 +252,14 @@ export const useMissionStore = create<MissionStore>()(
       agentSessionModelMap: {},
       agentSessionStatus: {},
       artifacts: [],
+      agentMetrics: {},
+      feedEvents: [],
       restoreCheckpoint: null,
       missionHistory: { reports: initialHistory },
       beforeUnloadRegistered: false,
+      savedTeams: [],
+      streamText: '',
+      workerOutputs: {},
 
       startMission: (mission) => {
         const activeMission: ActiveMission = {
@@ -230,8 +270,10 @@ export const useMissionStore = create<MissionStore>()(
           agentSessionModelMap: { ...(mission.agentSessionModelMap ?? {}) },
           agentSessionStatus: { ...(mission.agentSessionStatus ?? {}) },
           artifacts: [...(mission.artifacts ?? [])],
+          agentMetrics: {},
           tasks: [...mission.tasks],
           team: mission.team.map((member) => ({ ...member })),
+          feedEvents: [],
         }
 
         set((state) => {
@@ -248,8 +290,11 @@ export const useMissionStore = create<MissionStore>()(
             agentSessionModelMap: activeMission.agentSessionModelMap,
             agentSessionStatus: activeMission.agentSessionStatus,
             artifacts: activeMission.artifacts,
+            feedEvents: activeMission.feedEvents,
             dispatchedTaskIdsByAgent: {},
             restoreCheckpoint: null,
+            streamText: '',
+            workerOutputs: {},
           }
           return {
             ...nextState,
@@ -330,6 +375,8 @@ export const useMissionStore = create<MissionStore>()(
           agentSessionStatus: {},
           artifacts: [],
           restoreCheckpoint: null,
+          streamText: '',
+          workerOutputs: {},
         })
       },
 
@@ -422,6 +469,26 @@ export const useMissionStore = create<MissionStore>()(
         })
       },
 
+      addFeedEvent: (event) => {
+        set((state) => {
+          if (!state.activeMission) return state
+          const feedEvents = [...state.activeMission.feedEvents, event].slice(-500)
+          const activeMission = {
+            ...state.activeMission,
+            feedEvents,
+          }
+          const nextState: MissionStore = {
+            ...state,
+            activeMission,
+            feedEvents,
+          }
+          return {
+            ...nextState,
+            ...updateCheckpointSnapshot(nextState),
+          }
+        })
+      },
+
       setMissionState: (missionStateValue) => {
         set((state) => {
           const missionState = applyUpdater(state.missionState, missionStateValue)
@@ -450,6 +517,25 @@ export const useMissionStore = create<MissionStore>()(
         })
       },
 
+      setAgentMetrics: (metricsValue) => {
+        set((state) => {
+          const agentMetrics = applyUpdater(state.agentMetrics, metricsValue)
+          const activeMission = state.activeMission
+            ? { ...state.activeMission, agentMetrics }
+            : null
+          const nextState: MissionStore = {
+            ...state,
+            activeMission,
+            agentMetrics,
+          }
+          return {
+            ...nextState,
+            ...syncActiveMission(nextState),
+            ...updateCheckpointSnapshot(nextState),
+          }
+        })
+      },
+
       restoreMission: (checkpoint) => {
         const restoredTasks: HubTask[] = checkpoint.tasks.map((task) => ({
           id: task.id,
@@ -461,6 +547,17 @@ export const useMissionStore = create<MissionStore>()(
           missionId: checkpoint.id,
           createdAt: checkpoint.startedAt,
           updatedAt: checkpoint.updatedAt,
+          // NEW — Sprint 1 planning fields
+          dependencies: Array.isArray(task.dependencies) ? task.dependencies : undefined,
+          requiredSkills: Array.isArray(task.requiredSkills) ? task.requiredSkills : undefined,
+          estimatedComplexity:
+            task.estimatedComplexity === 'trivial' ||
+            task.estimatedComplexity === 'small' ||
+            task.estimatedComplexity === 'medium' ||
+            task.estimatedComplexity === 'large'
+              ? task.estimatedComplexity
+              : undefined,
+          category: isTaskCategory(task.category) ? task.category : undefined,
         }))
         const activeMission: ActiveMission = {
           id: checkpoint.id,
@@ -470,6 +567,12 @@ export const useMissionStore = create<MissionStore>()(
           team: checkpoint.team.map((member) => ({
             ...member,
             status: 'available',
+            costPreference:
+              member.costPreference === 'cheap' ||
+              member.costPreference === 'fast' ||
+              member.costPreference === 'capable'
+                ? member.costPreference
+                : undefined,
           })),
           tasks: restoredTasks,
           agentSessionMap: {
@@ -481,6 +584,8 @@ export const useMissionStore = create<MissionStore>()(
           budgetLimit: checkpoint.budgetLimit ?? '',
           startedAt: checkpoint.startedAt,
           artifacts: [],
+          agentMetrics: checkpoint.agentMetrics ?? {},
+          feedEvents: [],
         }
         const nextState: MissionStore = {
           ...get(),
@@ -495,6 +600,8 @@ export const useMissionStore = create<MissionStore>()(
           agentSessionModelMap: activeMission.agentSessionModelMap,
           agentSessionStatus: {},
           artifacts: [],
+          agentMetrics: checkpoint.agentMetrics ?? {},
+          feedEvents: [],
           restoreCheckpoint: null,
         }
         set({
@@ -606,6 +713,25 @@ export const useMissionStore = create<MissionStore>()(
             ...updateCheckpointSnapshot(nextState),
           }
         }),
+      setFeedEvents: (value) =>
+        set((state) => {
+          const feedEvents = applyUpdater(state.feedEvents, value)
+          const activeMission = state.activeMission
+            ? {
+                ...state.activeMission,
+                feedEvents,
+              }
+            : null
+          const nextState: MissionStore = {
+            ...state,
+            activeMission,
+            feedEvents,
+          }
+          return {
+            ...nextState,
+            ...updateCheckpointSnapshot(nextState),
+          }
+        }),
       setActiveMissionMeta: (value) =>
         set((state) => {
           if (!state.activeMission) {
@@ -638,9 +764,73 @@ export const useMissionStore = create<MissionStore>()(
       },
       markBeforeUnloadRegistered: (beforeUnloadRegistered) =>
         set({ beforeUnloadRegistered }),
+
+      saveTeam: (config: SavedTeamConfig) =>
+        set((state) => ({
+          savedTeams: [
+            config,
+            ...state.savedTeams.filter((t) => t.id !== config.id),
+          ],
+        })),
+
+      deleteTeam: (id: string) =>
+        set((state) => ({
+          savedTeams: state.savedTeams.filter((t) => t.id !== id),
+        })),
+
+      updateSavedTeam: (id: string, updates: Partial<SavedTeamConfig>) =>
+        set((state) => ({
+          savedTeams: state.savedTeams.map((t) =>
+            t.id === id ? { ...t, ...updates, updatedAt: Date.now() } : t,
+          ),
+        })),
+
+      attachFilesToTasks: (taskIds, files) => {
+        if (taskIds.length === 0 || files.length === 0) return
+        set((state) => {
+          if (!state.activeMission) return state
+          const taskIdSet = new Set(taskIds)
+          const tasks = state.activeMission.tasks.map((task) => {
+            if (!taskIdSet.has(task.id)) return task
+            const existing = task.files ?? []
+            const merged = Array.from(new Set([...existing, ...files]))
+            return { ...task, files: merged, updatedAt: Date.now() }
+          })
+          const activeMission = { ...state.activeMission, tasks }
+          const nextState: MissionStore = {
+            ...state,
+            activeMission,
+            missionTasks: tasks,
+          }
+          return {
+            ...nextState,
+            ...updateCheckpointSnapshot(nextState),
+          }
+        })
+      },
+
+      appendStreamText: (text) => {
+        set((state) => ({
+          streamText: state.streamText + text,
+        }))
+      },
+
+      setWorkerOutput: (sessionKey, output) => {
+        set((state) => ({
+          workerOutputs: { ...state.workerOutputs, [sessionKey]: output },
+        }))
+      },
+
+      clearStream: () => {
+        set({ streamText: '', workerOutputs: {} })
+      },
     }),
     {
       name: 'clawsuite:mission-store',
+      partialize: (state) => {
+        const { streamText, workerOutputs, ...persisted } = state
+        return persisted
+      },
       onRehydrateStorage: () => (state) => {
         if (!state) return
         if (state.activeMission && !state.restoreCheckpoint) {
