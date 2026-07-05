@@ -3,6 +3,36 @@ import { cn } from '@/lib/utils'
 import { emitFeedEvent } from './feed-event-bus'
 export type TaskPriority = 'urgent' | 'high' | 'normal' | 'low'
 export type TaskStatus = 'inbox' | 'assigned' | 'in_progress' | 'review' | 'done'
+export type TaskComplexity = 'trivial' | 'small' | 'medium' | 'large'
+export type TaskCategory =
+  | 'research'
+  | 'code'
+  | 'review'
+  | 'deploy'
+  | 'testing'
+  | 'docs'
+  | 'design'
+  | 'analysis'
+  | 'data'
+  | 'other'
+
+export const TASK_CATEGORIES: TaskCategory[] = [
+  'research',
+  'code',
+  'review',
+  'deploy',
+  'testing',
+  'docs',
+  'design',
+  'analysis',
+  'data',
+  'other',
+]
+
+export function isTaskCategory(value: unknown): value is TaskCategory {
+  return typeof value === 'string' && (TASK_CATEGORIES as string[]).includes(value)
+}
+
 export type HubTask = {
   id: string
   title: string
@@ -14,6 +44,16 @@ export type HubTask = {
   missionId?: string
   createdAt: number
   updatedAt: number
+  /** IDs of tasks that must complete before this one can start. */
+  dependencies?: string[]
+  /** Skills required to perform this task. */
+  requiredSkills?: string[]
+  /** Sizing hint used by the planner UI and analytics. */
+  estimatedComplexity?: TaskComplexity
+  /** Coarse category bucket used for analytics and routing. */
+  category?: TaskCategory
+  /** File paths the task is scoped to. */
+  files?: string[]
 }
 export type TaskBoardRef = {
   addTasks: (tasks: Array<HubTask>) => void
