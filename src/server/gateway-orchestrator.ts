@@ -801,11 +801,8 @@ if (typeof process !== 'undefined' && process.env.NODE_ENV !== 'test') {
       // ignore — monitor may not be started
     }
     try {
-      // @ts-ignore - deferred file: agent-messaging port pending Tier 2 completion
-      const { prepareForShutdown } = await import(
-        // @ts-ignore - deferred file: agent-messaging port pending Tier 2 completion
-        './agent-messaging'
-      )
+      // agent-messaging is now ported (Tier 1 agent comms chunk)
+      const { prepareForShutdown } = await import('./agent-messaging')
       prepareForShutdown()
     } catch {
       // ignore — messaging may not be initialized
