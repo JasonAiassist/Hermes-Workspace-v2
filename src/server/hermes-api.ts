@@ -1,57 +1,63 @@
 /**
- * Hermes API HTTP client — STUB.
+ * Hermes API facade.
  *
- * Real implementation deferred to migration chunk M4 (~570 lines).
- * This stub provides the module surface that downstream code
- * (agent-inbox-deliverer, routes, etc.) imports so the v2 build
- * passes and unit tests can `vi.mock` it cleanly.
+ * Barrel re-export of the split modules. New code should prefer
+ * importing from the specific module (e.g. `./hermes-sessions`) so
+ * the bundler can tree-shake; this facade exists for backward
+ * compatibility with existing consumers (e.g. agent-inbox-deliverer,
+ * routes/api/agents/*).
  *
- * Replace this file with the real port when M4 lands.
+ * Module map:
+ *   - hermes-api-client: HTTP verbs + auth + base URL + domain types
+ *   - hermes-sessions:   session CRUD + messages + search + fork + conversions
+ *   - hermes-stream:     SSE chat streaming + non-streaming chat
+ *   - hermes-meta:       config / models / skills / memory + health
  */
 
-// Type-shape stubs only — actual HTTP implementation comes in M4.
-export type SessionSummary = {
-  id: string
-  title?: string
-  updatedAt?: number
-}
+export {
+  authHeaders,
+  hermesDelete,
+  hermesGet,
+  hermesPatch,
+  hermesPost,
+  resolveBaseUrl,
+  withProfile,
+  type HermesConfig,
+  type HermesMessage,
+  type HermesSession,
+} from './hermes-api-client'
 
-export type CreateSessionInput = {
-  id: string
-  title?: string
-  model?: string
-}
+export {
+  createSession,
+  deleteSession,
+  forkSession,
+  getMessages,
+  getSession,
+  listSessions,
+  localSessionToHermes,
+  searchSessions,
+  shouldUseLocalStore,
+  toChatMessage,
+  toSessionSummary,
+  updateSession,
+} from './hermes-sessions'
 
-export type StreamChatInput = {
-  message: string
-  model?: string
-  systemPrompt?: string
-}
+export {
+  sendChat,
+  streamChat,
+  type StreamChatEvent,
+  type StreamChatOptions,
+} from './hermes-stream'
 
-export type StreamChatOptions = {
-  onEvent: (event: unknown) => void
-}
-
-export async function listSessions(
-  _limit?: number,
-  _offset?: number,
-  _profileName?: string,
-): Promise<SessionSummary[]> {
-  throw new Error('hermes-api.listSessions not implemented (M4 deferred)')
-}
-
-export async function createSession(
-  _input: CreateSessionInput,
-  _profileName?: string,
-): Promise<SessionSummary> {
-  throw new Error('hermes-api.createSession not implemented (M4 deferred)')
-}
-
-export async function streamChat(
-  _sessionKey: string,
-  _input: StreamChatInput,
-  _options: StreamChatOptions,
-  _profileName?: string,
-): Promise<void> {
-  throw new Error('hermes-api.streamChat not implemented (M4 deferred)')
-}
+export {
+  checkHealth,
+  getConfig,
+  getMemory,
+  getSkill,
+  getSkillCategories,
+  isHermesAvailable,
+  listModels,
+  listSkills,
+  patchConfig,
+  type ListModelsResponse,
+} from './hermes-meta'
